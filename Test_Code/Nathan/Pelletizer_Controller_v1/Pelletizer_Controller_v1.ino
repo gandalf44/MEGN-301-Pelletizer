@@ -22,6 +22,10 @@ MAX6675 thermoUno(THERMO_UNO_CLK, THEMRO_UNO_CS, THERMO_UNO_DO);
 
 // Thermcouple Dos
 
+// Motor Ports:
+// #define SHAFT 20
+// #define CUTTER 21
+
 // Define E-stop Port
 #define ESTOP 12
 
@@ -163,17 +167,22 @@ void setup() {
 
 void loop() {
 
+  // Create and Initialize PID
   PID* unoPID = new PID(1,0,0.5, 100);
+  unoPID->startOutput(thermoUno.readCelsius(), millis());
+  unoPID->setSetpoint(30);
+  
+  delay(300);
 
   while(runMain) {
     
     // put your main code here, to run repeatedly:
     analogWrite(GREEN, 50);
 
-
-
-    Serial.println(thermoUno.readCelsius());
-
+    Serial.print("THERMO UNO C = ");
+    Serial.print(thermoUno.readCelsius());
+    Serial.print(" PID VALUE = ");
+    Serial.println(unoPID->output(thermoUno.readCelsius(), millis()));
 
     // Check ESTOP
     if(!digitalRead(ESTOP)) {
@@ -181,6 +190,7 @@ void loop() {
       debug_println("ESTOP TRIGGERED!");
       killAll();
     }
+    
     delay(300);
   }
 
