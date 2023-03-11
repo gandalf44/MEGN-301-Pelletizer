@@ -93,6 +93,9 @@ class PID {
 
     double output(double curInput){ 
       long curTime = millis();
+      Serial.print("T(");
+      Serial.print(curTime);
+      Serial.print(" ms) ");
       // Calculate the integral
       pItot = pItot + (curTime-pPrevTime)*curInput;
 
