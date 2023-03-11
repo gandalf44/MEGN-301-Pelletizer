@@ -111,7 +111,13 @@ class PID {
       // reinitializes previous variables
       pPrevInput = curInput;
       pPrevTime = curTime;
-      
+      Serial.print("P(");
+      Serial.print(P);
+      Serial.print(")*I(");
+      Serial.print(I);
+      Serial.print(")*D(");
+      Serial.print(D);
+      Serial.print(") = ");
       return (P + I + D);
     }
 };
@@ -169,11 +175,11 @@ void setup() {
 void loop() {
 
   // Create and Initialize PID
-  PID* unoPID = new PID(1,0,0.5, 100);
+  PID* unoPID = new PID(1,.00001,1, 10000000);
   unoPID->startOutput(thermoUno.readCelsius());
-  unoPID->setSetpoint(30);
+  unoPID->setSetpoint(200);
   
-  delay(300);
+  delay(50);
 
   while(runMain) {
     
