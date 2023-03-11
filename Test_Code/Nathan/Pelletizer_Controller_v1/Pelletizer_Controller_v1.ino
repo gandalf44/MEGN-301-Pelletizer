@@ -1,5 +1,4 @@
 // Include necessary libraries:
-#include <Thread.h>
 #include "max6675.h"
 
 
@@ -27,11 +26,6 @@ MAX6675 thermoUno(THERMO_UNO_CLK, THEMRO_UNO_CS, THERMO_UNO_DO);
 #define ESTOP 12
 
 /////////////////
-
-
-///// Threads /////
-Thread userInput = Thread();
-///////////////////
 
 ///// Global Variables /////
 bool runMain = true; // true so long as the primary code should run in main (E-stop makes this false)
@@ -133,20 +127,6 @@ void debug_println(String output) {
   #endif
 }
 
-// E-STOP Function:
-void checkInput() {
-    debug_println("Checking for input");
-
-    // Check ESTOP
-    if(!digitalRead(ESTOP)) {
-      runMain = false;
-      debug_println("ESTOP TRIGGERED!");
-      killAll();
-    }
-
-    Serial.println(thermoUno.readCelsius());
-}
-
 
 // shutdown function
 void killAll() {
@@ -177,26 +157,31 @@ void setup() {
 
   // Initialize pin
   pinMode(ESTOP, INPUT_PULLUP);
-
-
-  // Initialize Threads
-  userInput.onRun(checkInput);
-  userInput.setInterval(300);
-
+  
 }
 
 
 void loop() {
+
+  PID* unoPID = new PID(1,0,0.5, 100);
 
   while(runMain) {
     
     // put your main code here, to run repeatedly:
     analogWrite(GREEN, 50);
 
-    if(userInput.shouldRun()) { // (NOTE: Consider adding a thread controller at a later date)
-      userInput.run();
+
+
+    Serial.println(thermoUno.readCelsius());
+
+
+    // Check ESTOP
+    if(!digitalRead(ESTOP)) {
+      runMain = false;
+      debug_println("ESTOP TRIGGERED!");
+      killAll();
     }
-    
+    delay(300);
   }
 
   // Insert restart code
