@@ -6,7 +6,7 @@ class PID {
     double pkI;
     double pkD;
     double pPrevInput;
-    double pPrevTime;
+    long pPrevTime;
     double pImax;
     double pItot;
     double pSetpoint;
@@ -49,12 +49,13 @@ class PID {
     double getDmax(){ return pImax; }
     void getSetpoint() { return pSetpoint; }
 
-    double startOutput(double prevInput, double prevTime) {
+    double startOutput(double prevInput) {
       pPrevInput = prevInput;
-      pPrevTime = prevTime;
+      pPrevTime = millis();
     }
 
-    double output(double curInput, double curTime){ 
+    double output(double curInput){ 
+      long curTime = millis();
       // Calculate the integral
       pItot = pItot + (curTime-pPrevTime)*curInput;
 

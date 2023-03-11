@@ -43,7 +43,7 @@ class PID {
     double pkI;
     double pkD;
     double pPrevInput;
-    double pPrevTime;
+    long pPrevTime;
     double pImax;
     double pItot;
     double pSetpoint;
@@ -86,12 +86,13 @@ class PID {
     double getDmax(){ return pImax; }
     void getSetpoint() { return pSetpoint; }
 
-    double startOutput(double prevInput, double prevTime) {
+    double startOutput(double prevInput) {
       pPrevInput = prevInput;
-      pPrevTime = prevTime;
+      pPrevTime = millis();
     }
 
-    double output(double curInput, double curTime){ 
+    double output(double curInput){ 
+      long curTime = millis();
       // Calculate the integral
       pItot = pItot + (curTime-pPrevTime)*curInput;
 
@@ -169,7 +170,7 @@ void loop() {
 
   // Create and Initialize PID
   PID* unoPID = new PID(1,0,0.5, 100);
-  unoPID->startOutput(thermoUno.readCelsius(), millis());
+  unoPID->startOutput(thermoUno.readCelsius());
   unoPID->setSetpoint(30);
   
   delay(300);
@@ -182,7 +183,7 @@ void loop() {
     Serial.print("THERMO UNO C = ");
     Serial.print(thermoUno.readCelsius());
     Serial.print(" PID VALUE = ");
-    Serial.println(unoPID->output(thermoUno.readCelsius(), millis()));
+    Serial.println(unoPID->output(thermoUno.readCelsius()));
 
     // Check ESTOP
     if(!digitalRead(ESTOP)) {
@@ -191,7 +192,7 @@ void loop() {
       killAll();
     }
     
-    delay(300);
+    delay(500); // Should be set to 300 typically
   }
 
   // Insert restart code
