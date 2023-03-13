@@ -144,8 +144,37 @@ void setup() {
 
 
 void loop() {
-    
+  String serialValue;
   while(runMain) {
+
+    if(Serial.available() > 0){
+      serialValue = Serial.readString();
+      Serial.println("USER INPUT");
+      Serial.println(serialValue.charAt(0));
+      // if P, set P.
+      if(serialValue.charAt(0) == 'P') {
+        Serial.print("P set to . . . ");
+        Kp = (serialValue.substring(1)).toDouble();
+        Serial.println(Kp);
+        unoPID.SetTunings(Kp, Ki, Kd);
+      }
+      // if I, set I.
+      else if(serialValue.charAt(0) == 'I') {
+        Serial.print("I set to . . . ");
+        Ki = (serialValue.substring(1)).toDouble();
+        Serial.println(Ki);
+        unoPID.SetTunings(Kp, Ki, Kd);
+      }
+      // if D, set D.
+      else if(serialValue.charAt(0) == 'D') {
+        Serial.print("D set to . . . ");
+        Kd = (serialValue.substring(1)).toDouble();
+        Serial.println(Kd);
+        unoPID.SetTunings(Kp, Ki, Kd);
+      }
+      
+      
+    }
     
     // put your main code here, to run repeatedly:
     analogWrite(GREEN, 50);
