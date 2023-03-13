@@ -25,8 +25,8 @@ MAX6675 thermoUno(THERMO_UNO_CLK, THEMRO_UNO_CS, THERMO_UNO_DO);
 // Thermcouple Dos
 
 // Motor Ports:
-// #define SHAFT 20
-// #define CUTTER 21
+#define SHAFT 20
+#define CUTTER 21
 
 // Define E-stop Port
 #define ESTOP 12
@@ -42,6 +42,8 @@ bool runMain = true; // true so long as the primary code should run in main (E-s
 bool isHot = false; // true if heater is hot
 short shaftPWM = 50;
 short cutPWM = 50;
+bool shaftOn = true;
+bool cutOn = true;
 ////////////////////////////
 
 // PID
@@ -76,6 +78,22 @@ void checkButtons() {
       killAll();
     }
 
+    // Check's if PWM's are on
+    if(shaftOn){
+      analogWrite(GREEN, shaftPWM);
+      analogWrite(SHAFT, shaftPWM);
+    } else {
+      analogWrite(GREEN, 0);
+      analogWrite(SHAFT, 0);
+    }
+    if(cutOn) {
+      analogWrite(YELLOW, cutPWM);
+      analogWrite(CUTTER, cutPWM);
+    } else {
+      analogWrite(YELLOW, 0);
+      analogWrite(CUTTER, 0);
+    }
+
     // Calculates PWM:
     unoTemp = thermoUno.readCelsius();
     unoPID.Compute();
@@ -91,6 +109,7 @@ void checkButtons() {
     Serial.print(unoPID.GetKd());
     Serial.print(") = ");
     Serial.println(Output);
+
 }
 
 
@@ -100,6 +119,8 @@ void killAll() {
   digitalWrite(RED, LOW);
   digitalWrite(YELLOW, LOW);
   digitalWrite(HEATER, LOW);
+  digitalWrite(SHAFT, LOW);
+  digitalWrite(CUTTER, LOW);
 }
 
 //-----/////////////////////------//
@@ -108,6 +129,7 @@ void killAll() {
 void setup() {
   Serial.begin(9600); // Sets up serial port
 
+  // Prints startup message:
   Serial.println("PELLETIZER INITIALIZED");
   
   // Initialize tester pins:
@@ -127,7 +149,6 @@ void setup() {
   // Initialize Threads
   CHECK_BUTTONS.onRun(checkButtons);
   CHECK_BUTTONS.setInterval(300);
-
 
   ////// PID: //////
   windowStartTime = millis();
@@ -150,9 +171,6 @@ void loop() {
   while(runMain) {
 
     // put your main code here, to run repeatedly:
-    analogWrite(GREEN, shaftPWM);
-    analogWrite(YELLOW, cutPWM);
-
     
     // Checks for new string in serial:
     if(Serial.available() > 0){
@@ -207,7 +225,7 @@ void loop() {
     else digitalWrite(RED, LOW);
 
 
-    // Checks if ESTOP thread could run:
+    // Checks if button thread should run:
     if(CHECK_BUTTONS.shouldRun()) { // (NOTE: Consider adding a thread controller at a later date)
       CHECK_BUTTONS.run();
     }
