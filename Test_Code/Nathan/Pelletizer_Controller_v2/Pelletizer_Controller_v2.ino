@@ -40,6 +40,8 @@ Thread CHECK_BUTTONS = Thread();
 ///// Global Variables /////
 bool runMain = true; // true so long as the primary code should run in main (E-stop makes this false)
 bool isHot = false; // true if heater is hot
+short shaftPWM = 50;
+short cutPWM = 50;
 ////////////////////////////
 
 // PID
@@ -147,6 +149,12 @@ void loop() {
   String serialValue;
   while(runMain) {
 
+    // put your main code here, to run repeatedly:
+    analogWrite(GREEN, shaftPWM);
+    analogWrite(YELLOW, cutPWM);
+
+    
+    // Checks for new string in serial:
     if(Serial.available() > 0){
       serialValue = Serial.readString();
       Serial.println("USER INPUT");
@@ -172,12 +180,21 @@ void loop() {
         Serial.println(Kd);
         unoPID.SetTunings(Kp, Ki, Kd);
       }
-      
-      
+      // if C, set cutter speed
+      else if(serialValue.charAt(0) == 'C') {
+        Serial.print("cutPWM set to . . . ");
+        cutPWM = (serialValue.substring(1)).toInt();
+        Serial.println(cutPWM);
+      }
+      // if S, set shaft speed
+      else if(serialValue.charAt(0) == 'S') {
+        Serial.print("shaftPWM set to . . . ");
+        shaftPWM = (serialValue.substring(1)).toInt();
+        Serial.println(shaftPWM);
+      }
     }
     
-    // put your main code here, to run repeatedly:
-    analogWrite(GREEN, 50);
+    
 
     // PID PWM:
     if (millis() - windowStartTime > WindowSize)
