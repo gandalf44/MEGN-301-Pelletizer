@@ -1,6 +1,6 @@
 // Include necessary libraries:
-#include "max6675.h"
-#include "PID_v1.h"
+#include <max6675.h>
+#include <PID_v1.h>
 #include <Thread.h>
 
 
@@ -13,8 +13,12 @@
 #define GREEN 9
 #define RED 10
 #define YELLOW 11
-#define HEATER 52
+#define HEATER_UNO 52
+#define HEATER_DOS 53
 #define HEATON 22
+
+#define SHAFTON 20
+#define CUTON 21
 
 // Thermcouple Uno
 #define THERMO_UNO_DO 4
@@ -25,8 +29,8 @@ MAX6675 thermoUno(THERMO_UNO_CLK, THEMRO_UNO_CS, THERMO_UNO_DO);
 // Thermcouple Dos
 
 // Motor Ports:
-#define SHAFT 20
-#define CUTTER 21
+#define SHAFT 7
+#define CUTTER 8
 
 // Define E-stop Port
 #define ESTOP 12
@@ -39,7 +43,7 @@ Thread CHECK_BUTTONS = Thread();
 
 ///// Global Variables /////
 bool runMain = true; // true so long as the primary code should run in main (E-stop makes this false)
-bool isHot = false; // true if heater is hot
+bool isHot = false; // true if HEATER_UNO is hot
 short shaftPWM = 50;
 short cutPWM = 50;
 bool shaftOn = true;
@@ -76,6 +80,15 @@ void checkButtons() {
       runMain = false;
       debug_println("FALSE");
       killAll();
+    }
+
+    // Check if Shaft button is pressted
+    if(!digitalRead(SHAFTON)) {
+      shaftOn = !shaftOn;
+    }
+    // Check if cut button is pressed
+    if(!digitalRead(CUTON)) {
+      cutOn = !cutOn;
     }
 
     // Check's if PWM's are on
@@ -118,7 +131,8 @@ void killAll() {
   digitalWrite(GREEN, LOW);
   digitalWrite(RED, LOW);
   digitalWrite(YELLOW, LOW);
-  digitalWrite(HEATER, LOW);
+  digitalWrite(HEATER_UNO, LOW);
+  digitalWrite(HEATER_DOS, LOW);
   digitalWrite(SHAFT, LOW);
   digitalWrite(CUTTER, LOW);
 }
@@ -141,10 +155,13 @@ void setup() {
   digitalWrite(GREEN, HIGH);
   digitalWrite(RED, LOW);
   digitalWrite(YELLOW, LOW);
-  digitalWrite(HEATER, LOW);
+  digitalWrite(HEATER_UNO, LOW);
+  digitalWrite(HEATER_DOS, LOW);
 
   // Initialize pin
   pinMode(ESTOP, INPUT_PULLUP);
+  pinMode(SHAFTON, INPUT_PULLUP);
+  pinMode(CUTON, INPUT_PULLUP);
 
   // Initialize Threads
   CHECK_BUTTONS.onRun(checkButtons);
@@ -209,6 +226,12 @@ void loop() {
         Serial.print("shaftPWM set to . . . ");
         shaftPWM = (serialValue.substring(1)).toInt();
         Serial.println(shaftPWM);
+      }
+      // if X, change setpoint
+      else if(serialValue.charAt(0) == 'X') {
+        Serial.print("Setpoint changed to . . . ");
+        Setpoint = (serialValue.substring(1)).toInt();
+        Serial.println(Setpoint);
       }
     }
     
