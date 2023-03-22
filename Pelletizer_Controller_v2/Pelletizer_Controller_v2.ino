@@ -3,6 +3,9 @@
 #include <PID_v1.h>
 #include <Thread.h>
 
+#include  <Wire.h>
+#include  <LiquidCrystal_I2C.h>
+
 
 ///// PORTS /////
 
@@ -34,6 +37,9 @@ MAX6675 thermoUno(THERMO_UNO_CLK, THEMRO_UNO_CS, THERMO_UNO_DO);
 
 // Define E-stop Port
 #define ESTOP 12
+
+// LCD
+LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
 /////////////////
 
@@ -123,6 +129,10 @@ void checkButtons() {
     Serial.print(") = ");
     Serial.println(Output);
 
+//    lcd.clear();
+//    lcd.write("Temp");
+    //lcd.write(unoTemp);
+
 }
 
 
@@ -180,6 +190,15 @@ void setup() {
   unoPID.SetMode(AUTOMATIC);
    
   ///////////////
+
+  // LCD
+  lcd.init(); // initialize the lcd 
+  lcd.backlight();
+  lcd.clear();
+  lcd.write(67);
+  // https://www.arduino.cc/reference/en/language/variables/data-types/string/functions/tochararray/
+  // https://www.programmingelectronics.com/dtostrf/
+  
 }
 
 
