@@ -16,12 +16,13 @@
 #define GREEN 9
 #define RED 10
 #define YELLOW 11
+#define WHITE 12
 #define HEATER_UNO 52
 #define HEATER_DOS 53
-#define HEATON 22
+#define HEATON 22 // delete
 
-#define SHAFTON 20
-#define CUTON 21
+#define SHAFTON 2
+#define CUTON 3
 
 // Thermcouple Uno
 #define THERMO_UNO_DO 4
@@ -36,7 +37,7 @@ MAX6675 thermoUno(THERMO_UNO_CLK, THEMRO_UNO_CS, THERMO_UNO_DO);
 #define CUTTER 8
 
 // Define E-stop Port
-#define ESTOP 12
+#define ESTOP 13
 
 // LCD
 LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
@@ -52,8 +53,8 @@ bool runMain = true; // true so long as the primary code should run in main (E-s
 bool isHot = false; // true if HEATER_UNO is hot
 short shaftPWM = 50;
 short cutPWM = 50;
-bool shaftOn = true;
-bool cutOn = true;
+bool shaftOn = false; // shaft defaults to turned off
+bool cutOn = false; // shaft defaults to turned off
 ////////////////////////////
 
 // PID
@@ -99,10 +100,10 @@ void checkButtons() {
 
     // Check's if PWM's are on
     if(shaftOn){
-      analogWrite(GREEN, shaftPWM);
+      analogWrite(WHITE, shaftPWM);
       analogWrite(SHAFT, shaftPWM);
     } else {
-      analogWrite(GREEN, 0);
+      analogWrite(WHITE, 0);
       analogWrite(SHAFT, 0);
     }
     if(cutOn) {
@@ -141,6 +142,7 @@ void killAll() {
   digitalWrite(GREEN, LOW);
   digitalWrite(RED, LOW);
   digitalWrite(YELLOW, LOW);
+  digitalWrite(WHITE, LOW);
   digitalWrite(HEATER_UNO, LOW);
   digitalWrite(HEATER_DOS, LOW);
   digitalWrite(SHAFT, LOW);
