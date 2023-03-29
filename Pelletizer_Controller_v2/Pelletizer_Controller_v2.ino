@@ -17,20 +17,24 @@
 #define RED 10
 #define YELLOW 11
 #define WHITE 12
-#define HEATER_UNO 52
-#define HEATER_DOS 53
+#define HEATER_UNO 23
+#define HEATER_DOS 22
 #define HEATON 22 // delete
 
 #define SHAFTON 2
 #define CUTON 3
 
 // Thermcouple Uno
-#define THERMO_UNO_DO 4
-#define THEMRO_UNO_CS 5
-#define THERMO_UNO_CLK 6
-MAX6675 thermoUno(THERMO_UNO_CLK, THEMRO_UNO_CS, THERMO_UNO_DO);
+#define THERMO_UNO_SO 27
+#define THEMRO_UNO_CS 29
+#define THERMO_UNO_SCK 31
+MAX6675 thermoUno(THERMO_UNO_SCK, THEMRO_UNO_CS, THERMO_UNO_SO);
 
 // Thermcouple Dos
+#define THERMO_DOS_SO 35
+#define THEMRO_DOS_CS 37
+#define THERMO_DOS_SCK 39
+MAX6675 thermoDos(THERMO_DOS_SCK, THEMRO_DOS_CS, THERMO_DOS_SO);
 
 // Motor Ports:
 #define SHAFT 7
@@ -207,7 +211,7 @@ void setup() {
 void loop() {
   String serialValue;
   while(runMain) {
-
+    digitalWrite(GREEN, 75);
     // put your main code here, to run repeatedly:
     
     // Checks for new string in serial:
@@ -265,8 +269,8 @@ void loop() {
       debug_print("Increase Window Size: ");
       Serial.println(windowStartTime);
     }
-    if (Output < millis() - windowStartTime) digitalWrite(RED, HIGH);
-    else digitalWrite(RED, LOW);
+    if (Output < millis() - windowStartTime) digitalWrite(HEATER_UNO, HIGH);
+    else digitalWrite(HEATER_UNO, LOW);
 
 
     // Checks if button thread should run:
@@ -276,5 +280,7 @@ void loop() {
   }
 
   // Insert restart code
+  digitalWrite(RED, HIGH);
+  
   
 }
