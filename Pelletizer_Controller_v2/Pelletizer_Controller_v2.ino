@@ -64,14 +64,17 @@ bool cutOn = false; // shaft defaults to turned off
 ////////////////////////////
 
 // PID UNO
-double Setpoint, unoTemp, Output;
+double unoSetpoint, unoTemp, unoOutput;
 double Kp=10, Ki=0.2, Kd=0;
-PID unoPID(&unoTemp, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
+PID unoPID(&unoTemp, &unoOutput, &unoSetpoint, Kp, Ki, Kd, DIRECT);
 int WindowSize = 1000; // CONSIDER REDUCING WINDOW SIZE TO 300 ms (the thermocouple's refresh rate
 unsigned long windowStartTime;
 
 // PID DOS
-double dosTemp;
+// #define DOSPID // Defines compiler variable to run DOS PID and keep UNO PID from turning on DOS heater
+double dosSetpoint, dosTemp, dosOutput;
+double DOS_Kp=10, DOS_Ki=0.2, DOS_Kd=0;
+PID dosPID(&dosTemp, &dosOutput, &dosSetpoint, DOS_Kp, DOS_Ki, DOS_Kd, DIRECT);
 
 //-----///// Functions /////------//
 
@@ -138,7 +141,7 @@ void pidCompute() {
     lcd.print(" C");
     lcd.setCursor(0,1);
     lcd.print("DOS = ");
-    lcd.print(dosTemp);
+    lcd.print(unoTemp);
     lcd.print(" C");
     
       
@@ -152,7 +155,7 @@ void pidCompute() {
     Serial.print(")*D(");
     Serial.print(unoPID.GetKd());
     Serial.print(") = ");
-    Serial.print(Output);
+    Serial.print(unoOutput);
     Serial.print(" DIRECT = ");
     Serial.print(DIRECT);
     Serial.print(" DIRECTION = ");
@@ -219,24 +222,23 @@ void setup() {
   windowStartTime = millis();
 
   //initialize the variables we're linked to
-  Setpoint = 30 ;
+  unoSetpoint = 0;
+  dosSetpoint = 0;
 
   //tell the PID to range between 0 and the full window size
   unoPID.SetOutputLimits(0, WindowSize);
+  dosPID.SetOutputLimits(0, WindowSize);
 
   //turn the PID on
   unoPID.SetMode(AUTOMATIC);
-   
+  dosPID.SetMode(AUTOMATIC);
   ///////////////
 
   // LCD
   lcd.init(); // initialize the lcd 
   lcd.backlight();
   lcd.clear();
-  lcd.write(67);
-  // https://www.arduino.cc/reference/en/language/variables/data-types/string/functions/tochararray/
-  // https://www.programmingelectronics.com/dtostrf/
-  
+  lcd.print("-STARTUP-");  
 }
 
 
@@ -284,11 +286,17 @@ void loop() {
         shaftPWM = (serialValue.substring(1)).toInt();
         Serial.println(shaftPWM);
       }
-      // if X, change setpoint
+      // if X, change uno setpoint
       else if(serialValue.charAt(0) == 'X') {
-        Serial.print("Setpoint changed to . . . ");
-        Setpoint = (serialValue.substring(1)).toInt();
-        Serial.println(Setpoint);
+        Serial.print("UNO setpoint changed to . . . ");
+        unoSetpoint = (serialValue.substring(1)).toInt();
+        Serial.println(unoSetpoint);
+      }
+      // if Y, change dos Setpoint
+      else if(serialValue.charAt(0) == 'Y') {
+        Serial.print("DOS setpoint changed to . . . ");
+        dosSetpoint = (serialValue.substring(1)).toInt();
+        Serial.println(dosSetpoint);
       }
     }
     
@@ -301,16 +309,29 @@ void loop() {
       debug_print("Increase Window Size: ");
       Serial.println(windowStartTime);
     }
-    if (Output > millis() - windowStartTime) { // < changed from default
+    if (unoOutput > millis() - windowStartTime) { // < changed from default
       digitalWrite(HEATER_UNO, HIGH);
-      digitalWrite(HEATER_DOS, HIGH);
+      #ifndef DOSPID
+        digitalWrite(HEATER_DOS, HIGH);
+      #endif
       digitalWrite(UNO_INDICATOR, HIGH);
     }
     else {
       digitalWrite(HEATER_UNO, LOW);
-      digitalWrite(HEATER_DOS, LOW);
+      #ifndef DOSPID
+        digitalWrite(HEATER_DOS, LOW);
+      #endif
       digitalWrite(UNO_INDICATOR, LOW);
     }
+
+    #ifdef DOSPID
+      if (dosOutput > millis() - windowStartTime) { // < changed from default
+        digitalWrite(HEATER_DOS, HIGH);
+      }
+      else {
+        digitalWrite(HEATER_DOS, LOW);
+      }
+    #endif
 
 
     // Checks if button thread should run:
