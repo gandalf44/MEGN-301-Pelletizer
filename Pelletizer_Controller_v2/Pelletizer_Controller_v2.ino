@@ -20,6 +20,7 @@
 #define HEATER_UNO 23
 #define HEATER_DOS 22
 #define HEATON 22 // delete
+#define UNO_INDICATOR 25
 
 #define SHAFTON 2
 #define CUTON 3
@@ -148,6 +149,8 @@ void killAll() {
   digitalWrite(YELLOW, LOW);
   digitalWrite(WHITE, LOW);
   digitalWrite(HEATER_UNO, LOW);
+  digitalWrite(UNO_INDICATOR, LOW);
+  digitalWrite(HEATER_DOS, LOW);
   digitalWrite(HEATER_DOS, LOW);
   digitalWrite(SHAFT, LOW);
   digitalWrite(CUTTER, LOW);
@@ -166,12 +169,20 @@ void setup() {
   pinMode(GREEN, OUTPUT);
   pinMode(RED, OUTPUT);
   pinMode(YELLOW, OUTPUT);
+  pinMode(HEATER_UNO, OUTPUT);
+  digitalWrite(HEATER_DOS, LOW);
+  pinMode(UNO_INDICATOR, OUTPUT);
+  pinMode(HEATER_DOS, OUTPUT);
   
   // Initialize output pins:
   digitalWrite(GREEN, HIGH);
   digitalWrite(RED, LOW);
   digitalWrite(YELLOW, LOW);
   digitalWrite(HEATER_UNO, LOW);
+  digitalWrite(HEATER_DOS, LOW);
+  digitalWrite(UNO_INDICATOR, LOW);
+  digitalWrite(HEATER_DOS, LOW);
+  
   digitalWrite(HEATER_DOS, LOW);
 
   // Initialize pin
@@ -269,8 +280,16 @@ void loop() {
       debug_print("Increase Window Size: ");
       Serial.println(windowStartTime);
     }
-    if (Output < millis() - windowStartTime) digitalWrite(HEATER_UNO, HIGH);
-    else digitalWrite(HEATER_UNO, LOW);
+    if (Output < millis() - windowStartTime) {
+      digitalWrite(HEATER_UNO, HIGH);
+      digitalWrite(HEATER_DOS, HIGH);
+      digitalWrite(UNO_INDICATOR, HIGH);
+    }
+    else {
+      digitalWrite(HEATER_UNO, LOW);
+      digitalWrite(HEATER_DOS, LOW);
+      digitalWrite(UNO_INDICATOR, LOW);
+    }
 
 
     // Checks if button thread should run:
