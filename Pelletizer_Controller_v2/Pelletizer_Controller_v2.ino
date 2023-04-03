@@ -51,6 +51,7 @@ LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars
 
 ///// Threads /////
 Thread CHECK_BUTTONS = Thread();
+Thread PID_COMPUTE = Thread();
 ///////////////////
 
 ///// Global Variables /////
@@ -87,7 +88,7 @@ void debug_println(String output) {
 
 // E-STOP Function:
 void checkButtons() {
-    debug_println("Check ESTOP");
+    //debug_println("Check ESTOP");
     if(!digitalRead(ESTOP)) {
       runMain = false;
       debug_println("FALSE");
@@ -119,6 +120,9 @@ void checkButtons() {
       analogWrite(CUTTER, 0);
     }
 
+}
+
+void pidCompute() {
     // Calculates PWM:
     unoTemp = thermoUno.readCelsius();
     unoPID.Compute();
@@ -133,12 +137,11 @@ void checkButtons() {
     Serial.print(")*D(");
     Serial.print(unoPID.GetKd());
     Serial.print(") = ");
-    Serial.println(Output);
-
-//    lcd.clear();
-//    lcd.write("Temp");
-    //lcd.write(unoTemp);
-
+    Serial.print(Output);
+    Serial.print(" DIRECT = ");
+    Serial.print(DIRECT);
+    Serial.print(" DIRECTION = ");
+    Serial.println(unoPID.GetDirection());
 }
 
 
@@ -193,6 +196,8 @@ void setup() {
   // Initialize Threads
   CHECK_BUTTONS.onRun(checkButtons);
   CHECK_BUTTONS.setInterval(300);
+  PID_COMPUTE.onRun(pidCompute);
+  PID_COMPUTE.setInterval(WindowSize);
 
   ////// PID: //////
   windowStartTime = millis();
@@ -280,7 +285,7 @@ void loop() {
       debug_print("Increase Window Size: ");
       Serial.println(windowStartTime);
     }
-    if (Output < millis() - windowStartTime) {
+    if (Output > millis() - windowStartTime) { // < changed from default
       digitalWrite(HEATER_UNO, HIGH);
       digitalWrite(HEATER_DOS, HIGH);
       digitalWrite(UNO_INDICATOR, HIGH);
@@ -295,6 +300,11 @@ void loop() {
     // Checks if button thread should run:
     if(CHECK_BUTTONS.shouldRun()) { // (NOTE: Consider adding a thread controller at a later date)
       CHECK_BUTTONS.run();
+    }
+    
+    // Checks if PID thread should run
+    if(PID_COMPUTE.shouldRun()) { // (NOTE: Consider adding a thread controller at a later date)
+      PID_COMPUTE.run();
     }
   }
 
