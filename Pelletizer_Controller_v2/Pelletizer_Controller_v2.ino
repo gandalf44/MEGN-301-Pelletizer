@@ -63,12 +63,15 @@ bool shaftOn = false; // shaft defaults to turned off
 bool cutOn = false; // shaft defaults to turned off
 ////////////////////////////
 
-// PID
+// PID UNO
 double Setpoint, unoTemp, Output;
-double Kp=2, Ki=.5, Kd=0;
+double Kp=10, Ki=0.2, Kd=0;
 PID unoPID(&unoTemp, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
-int WindowSize = 1000;
+int WindowSize = 1000; // CONSIDER REDUCING WINDOW SIZE TO 300 ms (the thermocouple's refresh rate
 unsigned long windowStartTime;
+
+// PID DOS
+double dosTemp;
 
 //-----///// Functions /////------//
 
@@ -126,6 +129,18 @@ void pidCompute() {
     // Calculates PWM:
     unoTemp = thermoUno.readCelsius();
     unoPID.Compute();
+    dosTemp = thermoDos.readCelsius();
+
+    // Prints temp readings to LCD screen:
+    lcd.clear();
+    lcd.print("UNO = ");
+    lcd.print(unoTemp);
+    lcd.print(" C");
+    lcd.setCursor(0,1);
+    lcd.print("DOS = ");
+    lcd.print(dosTemp);
+    lcd.print(" C");
+    
       
     // Prints PID details:
     Serial.print("C = ");
@@ -142,6 +157,7 @@ void pidCompute() {
     Serial.print(DIRECT);
     Serial.print(" DIRECTION = ");
     Serial.println(unoPID.GetDirection());
+    
 }
 
 
