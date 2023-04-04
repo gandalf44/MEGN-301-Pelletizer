@@ -65,7 +65,7 @@ bool cutOn = false; // shaft defaults to turned off
 
 // PID UNO
 double unoSetpoint, unoTemp, unoOutput;
-double Kp=10, Ki=0.2, Kd=0;
+double Kp=4, Ki=0.21, Kd=0;
 PID unoPID(&unoTemp, &unoOutput, &unoSetpoint, Kp, Ki, Kd, DIRECT);
 int WindowSize = 1000; // CONSIDER REDUCING WINDOW SIZE TO 300 ms (the thermocouple's refresh rate
 unsigned long windowStartTime;
@@ -141,7 +141,7 @@ void pidCompute() {
     lcd.print(" C");
     lcd.setCursor(0,1);
     lcd.print("DOS = ");
-    lcd.print(unoTemp);
+    lcd.print(dosTemp);
     lcd.print(" C");
     
       
@@ -155,11 +155,11 @@ void pidCompute() {
     Serial.print(")*D(");
     Serial.print(unoPID.GetKd());
     Serial.print(") = ");
-    Serial.print(unoOutput);
-    Serial.print(" DIRECT = ");
+    Serial.println(unoOutput);
+    /*Serial.print(" DIRECT = ");
     Serial.print(DIRECT);
     Serial.print(" DIRECTION = ");
-    Serial.println(unoPID.GetDirection());
+    Serial.println(unoPID.GetDirection());*/
     
 }
 
@@ -347,6 +347,18 @@ void loop() {
 
   // Insert restart code
   digitalWrite(RED, HIGH);
+
+  // Prints temp readings to LCD screen:
+  lcd.clear();
+  lcd.print("UNO = ");
+  lcd.print(thermoUno.readCelsius());
+  lcd.print(" C");
+  lcd.setCursor(0,1);
+  lcd.print("DOS = ");
+  lcd.print(thermoDos.readCelsius());
+  lcd.print(" C");
+
+  delay(300);
   
   
 }
