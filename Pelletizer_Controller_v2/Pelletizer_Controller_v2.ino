@@ -65,7 +65,7 @@ bool cutOn = false; // shaft defaults to turned off
 
 // PID UNO
 double unoSetpoint, unoTemp, unoOutput;
-double Kp=4, Ki=0.21, Kd=0;
+double Kp=2.5, Ki=0.18, Kd=0;
 PID unoPID(&unoTemp, &unoOutput, &unoSetpoint, Kp, Ki, Kd, DIRECT);
 int WindowSize = 1000; // CONSIDER REDUCING WINDOW SIZE TO 300 ms (the thermocouple's refresh rate
 unsigned long windowStartTime;
