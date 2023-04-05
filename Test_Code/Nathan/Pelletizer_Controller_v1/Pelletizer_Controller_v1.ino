@@ -61,13 +61,13 @@ class PID {
     }
     
     // Overloaded constructor
-    PID(double P, double I, double D, double Dmax) {
+    PID(double P, double I, double D, double Imax) {
       pkP = P;
       pkI = I;
       pkD = D;
       pPrevInput = 0;
       pPrevTime = 0;
-      pImax = Dmax;
+      pImax = Imax;
       pItot = 0;
       pSetpoint = 0;
     }
@@ -76,7 +76,7 @@ class PID {
     void setP(double P){ pkP = P; }
     void setI(double I){ pkP = I; }
     void setD(double D){ pkD = D; }
-    void setDmax(double Dmax) { pImax = Dmax; }
+    void setImax(double Imax) { pImax = Imax; }
     void setSetpoint(double setpoint) { pSetpoint = setpoint; }
     
     // getters:
@@ -93,11 +93,11 @@ class PID {
 
     double output(double curInput){ 
       long curTime = millis();
-      Serial.print("T(");
+      /*Serial.print("T(");
       Serial.print(curTime);
-      Serial.print(" ms) ");
+      Serial.print(" ms) ");*/
       // Calculate the integral
-      pItot = pItot + (curTime-pPrevTime)*curInput;
+      pItot += (curTime-pPrevTime)*curInput;
 
       // Check if I total is greater than the max:
       if(pItot > pImax) {
@@ -114,13 +114,13 @@ class PID {
       // reinitializes previous variables
       pPrevInput = curInput;
       pPrevTime = curTime;
-      Serial.print("P(");
+      /*Serial.print("P(");
       Serial.print(P);
       Serial.print(")*I(");
       Serial.print(I);
       Serial.print(")*D(");
       Serial.print(D);
-      Serial.print(") = ");
+      Serial.print(") = ");*/
       return (P + I + D);
     }
 };

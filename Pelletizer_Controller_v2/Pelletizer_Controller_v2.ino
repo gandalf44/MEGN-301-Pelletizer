@@ -1,6 +1,6 @@
 // Include necessary libraries:
 #include <max6675.h>
-#include <PID_v1.h>
+//#include <PID_v1.h>
 #include <Thread.h>
 
 #include  <Wire.h>
@@ -63,10 +63,99 @@ bool shaftOn = false; // shaft defaults to turned off
 bool cutOn = false; // shaft defaults to turned off
 ////////////////////////////
 
+// class to create a custom PID
+class PID {
+  private:
+    double pkP;
+    double pkI;
+    double pkD;
+    double pPrevInput;
+    long pPrevTime;
+    double pImax;
+    double pItot;
+    double pSetpoint;
+  public:
+    // default counstructor
+    PID(){
+      pkP = 0;
+      pkI = 0;
+      pkD = 0;
+      pPrevInput = 0;
+      pPrevTime = 0;
+      pImax = 0;
+      pItot = 0;
+      pSetpoint = 0;
+    }
+    
+    // Overloaded constructor
+    PID(double P, double I, double D, double Imax) {
+      pkP = P;
+      pkI = I;
+      pkD = D;
+      pPrevInput = 0;
+      pPrevTime = 0;
+      pImax = Imax;
+      pItot = 0;
+      pSetpoint = 0;
+    }
+  
+    // setters:
+    void setP(double P){ pkP = P; }
+    void setI(double I){ pkP = I; }
+    void setD(double D){ pkD = D; }
+    void setImax(double Imax) { pImax = Imax; }
+    void setSetpoint(double setpoint) { pSetpoint = setpoint; }
+    
+    // getters:
+    double getP(){ return pkP; }
+    double getI(){ return pkI; }
+    double getD(){ return pkD; }
+    double getDmax(){ return pImax; }
+    void getSetpoint() { return pSetpoint; }
+
+    double startOutput(double prevInput) {
+      pPrevInput = prevInput;
+      pPrevTime = millis();
+    }
+
+    double output(double curInput){ 
+      long curTime = millis();
+      /*Serial.print("T(");
+      Serial.print(curTime);
+      Serial.print(" ms) ");*/
+      // Calculate the integral
+      pItot += (curTime-pPrevTime)*curInput;
+
+      // Check if I total is greater than the max:
+      if(pItot > pImax) {
+        pItot = pImax;
+      } else if (pItot < -pImax) {
+        pItot = -pImax;
+      }
+      
+      // Evaluate P, i, and D terms:
+      double P = pkP*(pSetpoint-curInput);
+      double I = pkI*pItot;
+      double D = pkD*(pPrevInput-curInput)/(pPrevTime-curTime);
+
+      // reinitializes previous variables
+      pPrevInput = curInput;
+      pPrevTime = curTime;
+      /*Serial.print("P(");
+      Serial.print(P);
+      Serial.print(")*I(");
+      Serial.print(I);
+      Serial.print(")*D(");
+      Serial.print(D);
+      Serial.print(") = ");*/
+      return (P + I + D);
+    }
+};
+
 // PID UNO
 double unoSetpoint, unoTemp, unoOutput;
 double Kp=2, Ki=0.15, Kd=0;
-PID unoPID(&unoTemp, &unoOutput, &unoSetpoint, Kp, Ki, Kd, DIRECT);
+PID unoPID(Kp, Ki, Kd, 500);
 int WindowSize = 1000; // CONSIDER REDUCING WINDOW SIZE TO 300 ms (the thermocouple's refresh rate)
 unsigned long windowStartTime;
 
@@ -74,7 +163,7 @@ unsigned long windowStartTime;
 #define DOSPID // Defines compiler variable to run DOS PID and keep UNO PID from turning on DOS heater
 double dosSetpoint, dosTemp, dosOutput;
 double DOS_Kp=10, DOS_Ki=0.2, DOS_Kd=0;
-PID dosPID(&dosTemp, &dosOutput, &dosSetpoint, DOS_Kp, DOS_Ki, DOS_Kd, DIRECT);
+PID dosPID(DOS_Kp, DOS_Ki, DOS_Kd, 500);
 
 //-----///// Functions /////------//
 
@@ -131,9 +220,9 @@ void checkButtons() {
 void pidCompute() {
     // Calculates PWM:
     unoTemp = thermoUno.readCelsius();
-    unoPID.Compute();
+    unoOutput = unoPID.output(unoTemp);
     dosTemp = thermoDos.readCelsius();
-    dosPID.Compute();
+    dosOutput = dosPID.output(dosTemp);
 
     // Prints temp readings to LCD screen:
     lcd.clear();
@@ -150,21 +239,21 @@ void pidCompute() {
     Serial.print("UNO C = ");
     Serial.print(unoTemp);
     Serial.print(" | P(");
-    Serial.print(unoPID.GetKp());
+    Serial.print(unoPID.getP());
     Serial.print(")*I(");
-    Serial.print(unoPID.GetKi());
+    Serial.print(unoPID.getI());
     Serial.print(")*D(");
-    Serial.print(unoPID.GetKd());
+    Serial.print(unoPID.getD());
     Serial.print(") = ");
     Serial.println(unoOutput);
     Serial.print("DOS C = ");
     Serial.print(dosTemp);
     Serial.print(" | P(");
-    Serial.print(dosPID.GetKp());
+    Serial.print(dosPID.getP());
     Serial.print(")*I(");
-    Serial.print(dosPID.GetKi());
+    Serial.print(dosPID.getI());
     Serial.print(")*D(");
-    Serial.print(dosPID.GetKd());
+    Serial.print(dosPID.getD());
     Serial.print(") = ");
     Serial.println(unoOutput);
     /*Serial.print(" DIRECT = ");
@@ -237,26 +326,25 @@ void setup() {
   dosSetpoint = 0;
 
   //tell the PID to range between 0 and the full window size
-  unoPID.SetOutputLimits(0, WindowSize);
-  dosPID.SetOutputLimits(0, WindowSize);
+  //unoPID.SetOutputLimits(0, WindowSize);
+  //dosPID.SetOutputLimits(0, WindowSize);
 
   //turn the PID on
-  unoPID.SetMode(AUTOMATIC);
-  dosPID.SetMode(AUTOMATIC);
-  ///////////////
+  //unoPID.SetMode(AUTOMATIC);
+  //dosPID.SetMode(AUTOMATIC);
+  ////////////////
 
   // LCD
   lcd.init(); // initialize the lcd 
   lcd.backlight();
   lcd.clear();
-  lcd.print("-STARTUP-");  
 }
 
 
 void loop() {
   String serialValue;
   while(runMain) {
-    digitalWrite(GREEN, 75);
+    digitalWrite(GREEN, 60);
     // put your main code here, to run repeatedly:
     
     // Checks for new string in serial:
@@ -270,21 +358,21 @@ void loop() {
         Serial.print("UNO P set to . . . ");
         Kp = (serialValue.substring(1)).toDouble();
         Serial.println(Kp);
-        unoPID.SetTunings(Kp, Ki, Kd);
+        unoPID.setP(Kp);
       }
       // if I, set I.
       else if(serialValue.charAt(0) == 'I') {
         Serial.print("UNO I set to . . . ");
         Ki = (serialValue.substring(1)).toDouble();
         Serial.println(Ki);
-        unoPID.SetTunings(Kp, Ki, Kd);
+        unoPID.setI(Ki);
       }
       // if D, set D.
       else if(serialValue.charAt(0) == 'D') {
         Serial.print("UNO D set to . . . ");
         Kd = (serialValue.substring(1)).toDouble();
         Serial.println(Kd);
-        unoPID.SetTunings(Kp, Ki, Kd);
+        unoPID.setD(Kd);
       }
       // if C, set cutter speed
       else if(serialValue.charAt(0) == 'C') {
@@ -302,12 +390,14 @@ void loop() {
       else if(serialValue.charAt(0) == 'X') {
         Serial.print("UNO setpoint changed to . . . ");
         unoSetpoint = (serialValue.substring(1)).toInt();
+        unoPID.setSetpoint(unoSetpoint);
         Serial.println(unoSetpoint);
       }
       // if Y, change dos Setpoint
       else if(serialValue.charAt(0) == 'Y') {
         Serial.print("DOS setpoint changed to . . . ");
         dosSetpoint = (serialValue.substring(1)).toInt();
+        dosPID.setSetpoint(dosSetpoint);
         Serial.println(dosSetpoint);
       }
       // if Q change DOS_kP
@@ -315,21 +405,21 @@ void loop() {
         Serial.print("DOS P changed to . . . ");
         DOS_Kp = (serialValue.substring(1)).toDouble();
         Serial.println(DOS_Kp);
-        dosPID.SetTunings(DOS_Kp, DOS_Ki, DOS_Kd);
+        dosPID.setP(DOS_Kp);
       }
       // if Q change DOS_kI
       else if(serialValue.charAt(0) == 'W') {
         Serial.print("DOS I changed to . . . ");
         DOS_Ki = (serialValue.substring(1)).toDouble();
         Serial.println(DOS_Ki);
-        dosPID.SetTunings(DOS_Kp, DOS_Ki, DOS_Kd);
+        dosPID.setI(DOS_Ki);
       }
       // if Q change DOS_kD
       else if(serialValue.charAt(0) == 'E') {
         Serial.print("DOS D changed to . . . ");
         DOS_Kd = (serialValue.substring(1)).toDouble();
         Serial.println(DOS_Kd);
-        dosPID.SetTunings(DOS_Kp, DOS_Ki, DOS_Kd);
+        dosPID.setD(DOS_Kd);
       }
     }
     
