@@ -16,7 +16,7 @@
 #define GREEN 9
 #define RED 10
 #define YELLOW 11
-#define WHITE 12
+#define WHITE   12
 #define HEATER_UNO 23
 #define HEATER_DOS 22
 #define HEATON 22 // delete
@@ -65,13 +65,13 @@ bool cutOn = false; // shaft defaults to turned off
 
 // PID UNO
 double unoSetpoint, unoTemp, unoOutput;
-double Kp=2.5, Ki=0.18, Kd=0;
+double Kp=2, Ki=0.15, Kd=0;
 PID unoPID(&unoTemp, &unoOutput, &unoSetpoint, Kp, Ki, Kd, DIRECT);
-int WindowSize = 1000; // CONSIDER REDUCING WINDOW SIZE TO 300 ms (the thermocouple's refresh rate
+int WindowSize = 1000; // CONSIDER REDUCING WINDOW SIZE TO 300 ms (the thermocouple's refresh rate)
 unsigned long windowStartTime;
 
 // PID DOS
-// #define DOSPID // Defines compiler variable to run DOS PID and keep UNO PID from turning on DOS heater
+#define DOSPID // Defines compiler variable to run DOS PID and keep UNO PID from turning on DOS heater
 double dosSetpoint, dosTemp, dosOutput;
 double DOS_Kp=10, DOS_Ki=0.2, DOS_Kd=0;
 PID dosPID(&dosTemp, &dosOutput, &dosSetpoint, DOS_Kp, DOS_Ki, DOS_Kd, DIRECT);
@@ -133,6 +133,7 @@ void pidCompute() {
     unoTemp = thermoUno.readCelsius();
     unoPID.Compute();
     dosTemp = thermoDos.readCelsius();
+    dosPID.Compute();
 
     // Prints temp readings to LCD screen:
     lcd.clear();
@@ -146,7 +147,7 @@ void pidCompute() {
     
       
     // Prints PID details:
-    Serial.print("C = ");
+    Serial.print("UNO C = ");
     Serial.print(unoTemp);
     Serial.print(" | P(");
     Serial.print(unoPID.GetKp());
@@ -154,6 +155,16 @@ void pidCompute() {
     Serial.print(unoPID.GetKi());
     Serial.print(")*D(");
     Serial.print(unoPID.GetKd());
+    Serial.print(") = ");
+    Serial.println(unoOutput);
+    Serial.print("DOS C = ");
+    Serial.print(dosTemp);
+    Serial.print(" | P(");
+    Serial.print(dosPID.GetKp());
+    Serial.print(")*I(");
+    Serial.print(dosPID.GetKi());
+    Serial.print(")*D(");
+    Serial.print(dosPID.GetKd());
     Serial.print(") = ");
     Serial.println(unoOutput);
     /*Serial.print(" DIRECT = ");
@@ -253,23 +264,24 @@ void loop() {
       serialValue = Serial.readString();
       Serial.println("USER INPUT");
       Serial.println(serialValue.charAt(0));
+      
       // if P, set P.
       if(serialValue.charAt(0) == 'P') {
-        Serial.print("P set to . . . ");
+        Serial.print("UNO P set to . . . ");
         Kp = (serialValue.substring(1)).toDouble();
         Serial.println(Kp);
         unoPID.SetTunings(Kp, Ki, Kd);
       }
       // if I, set I.
       else if(serialValue.charAt(0) == 'I') {
-        Serial.print("I set to . . . ");
+        Serial.print("UNO I set to . . . ");
         Ki = (serialValue.substring(1)).toDouble();
         Serial.println(Ki);
         unoPID.SetTunings(Kp, Ki, Kd);
       }
       // if D, set D.
       else if(serialValue.charAt(0) == 'D') {
-        Serial.print("D set to . . . ");
+        Serial.print("UNO D set to . . . ");
         Kd = (serialValue.substring(1)).toDouble();
         Serial.println(Kd);
         unoPID.SetTunings(Kp, Ki, Kd);
@@ -297,6 +309,27 @@ void loop() {
         Serial.print("DOS setpoint changed to . . . ");
         dosSetpoint = (serialValue.substring(1)).toInt();
         Serial.println(dosSetpoint);
+      }
+      // if Q change DOS_kP
+      else if(serialValue.charAt(0) == 'Q') {
+        Serial.print("DOS P changed to . . . ");
+        DOS_Kp = (serialValue.substring(1)).toDouble();
+        Serial.println(DOS_Kp);
+        dosPID.SetTunings(DOS_Kp, DOS_Ki, DOS_Kd);
+      }
+      // if Q change DOS_kI
+      else if(serialValue.charAt(0) == 'W') {
+        Serial.print("DOS I changed to . . . ");
+        DOS_Ki = (serialValue.substring(1)).toDouble();
+        Serial.println(DOS_Ki);
+        dosPID.SetTunings(DOS_Kp, DOS_Ki, DOS_Kd);
+      }
+      // if Q change DOS_kD
+      else if(serialValue.charAt(0) == 'E') {
+        Serial.print("DOS D changed to . . . ");
+        DOS_Kd = (serialValue.substring(1)).toDouble();
+        Serial.println(DOS_Kd);
+        dosPID.SetTunings(DOS_Kp, DOS_Ki, DOS_Kd);
       }
     }
     
