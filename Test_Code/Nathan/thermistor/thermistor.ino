@@ -2,9 +2,9 @@
 
 #include "max6675.h"
 
-int thermoDO = 4;
-int thermoCS = 5;
-int thermoCLK = 6;
+int thermoDO = 27;
+int thermoCS = 29;
+int thermoCLK = 31;
 
 MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO);
 
@@ -21,8 +21,6 @@ void loop() {
   
   Serial.print("C = "); 
   Serial.println(thermocouple.readCelsius());
-  Serial.print("F = ");
-  Serial.println(thermocouple.readFahrenheit());
  
   // For the MAX6675 to update, you must delay AT LEAST 250ms between reads!
   delay(250);

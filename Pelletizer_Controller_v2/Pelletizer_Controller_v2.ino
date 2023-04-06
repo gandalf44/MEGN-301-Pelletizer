@@ -21,6 +21,7 @@
 #define HEATER_DOS 22
 #define HEATON 22 // delete
 #define UNO_INDICATOR 25
+#define DOS_INDICATOR 26
 
 #define SHAFTON 2
 #define CUTON 3
@@ -154,16 +155,16 @@ class PID {
 
 // PID UNO
 double unoSetpoint, unoTemp, unoOutput;
-double Kp=2, Ki=0.15, Kd=0;
-PID unoPID(Kp, Ki, Kd, 500);
-int WindowSize = 1000; // CONSIDER REDUCING WINDOW SIZE TO 300 ms (the thermocouple's refresh rate)
+double Kp=10, Ki=0, Kd=0;
+PID unoPID(Kp, Ki, Kd, 200);
+int WindowSize = 300; // CONSIDER REDUCING WINDOW SIZE TO 300 ms (the thermocouple's refresh rate)
 unsigned long windowStartTime;
 
 // PID DOS
 #define DOSPID // Defines compiler variable to run DOS PID and keep UNO PID from turning on DOS heater
 double dosSetpoint, dosTemp, dosOutput;
-double DOS_Kp=10, DOS_Ki=0.2, DOS_Kd=0;
-PID dosPID(DOS_Kp, DOS_Ki, DOS_Kd, 500);
+double DOS_Kp=10, DOS_Ki=0, DOS_Kd=0;
+PID dosPID(DOS_Kp, DOS_Ki, DOS_Kd, 200);
 
 //-----///// Functions /////------//
 
@@ -255,7 +256,7 @@ void pidCompute() {
     Serial.print(")*D(");
     Serial.print(dosPID.getD());
     Serial.print(") = ");
-    Serial.println(unoOutput);
+    Serial.println(dosOutput);
     /*Serial.print(" DIRECT = ");
     Serial.print(DIRECT);
     Serial.print(" DIRECTION = ");
@@ -314,7 +315,7 @@ void setup() {
 
   // Initialize Threads
   CHECK_BUTTONS.onRun(checkButtons);
-  CHECK_BUTTONS.setInterval(300);
+  CHECK_BUTTONS.setInterval(400);
   PID_COMPUTE.onRun(pidCompute);
   PID_COMPUTE.setInterval(WindowSize);
 
@@ -450,9 +451,11 @@ void loop() {
     #ifdef DOSPID
       if (dosOutput > millis() - windowStartTime) { // < changed from default
         digitalWrite(HEATER_DOS, HIGH);
+        digitalWrite(DOS_INDICATOR, HIGH);
       }
       else {
         digitalWrite(HEATER_DOS, LOW);
+        digitalWrite(DOS_INDICATOR, LOW);
       }
     #endif
 
