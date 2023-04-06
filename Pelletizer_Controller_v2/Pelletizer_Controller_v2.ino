@@ -222,6 +222,7 @@ void pidCompute() {
     // Calculates PWM:
     unoTemp = thermoUno.readCelsius();
     unoOutput = unoPID.output(unoTemp);
+    delay(10  );
     dosTemp = thermoDos.readCelsius();
     dosOutput = dosPID.output(dosTemp);
 

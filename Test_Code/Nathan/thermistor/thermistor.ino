@@ -6,6 +6,12 @@ int thermoDO = 27;
 int thermoCS = 29;
 int thermoCLK = 31;
 
+// Thermcouple Dos
+#define THERMO_DOS_SO 35
+#define THEMRO_DOS_CS 37
+#define THERMO_DOS_SCK 39
+MAX6675 thermoDos(THERMO_DOS_SCK, THEMRO_DOS_CS, THERMO_DOS_SO);
+
 MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO);
 
 void setup() {
@@ -20,7 +26,9 @@ void loop() {
   // basic readout test, just print the current temp
   
   Serial.print("C = "); 
-  Serial.println(thermocouple.readCelsius());
+  Serial.print(thermocouple.readCelsius());
+  Serial.print(" C = ");
+  Serial.println(thermoDos.readCelsius());
  
   // For the MAX6675 to update, you must delay AT LEAST 250ms between reads!
   delay(250);
