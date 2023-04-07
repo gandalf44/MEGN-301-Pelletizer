@@ -1,6 +1,5 @@
 // Include necessary libraries:
 #include <max6675.h>
-//#include <PID_v1.h>
 #include <Thread.h>
 
 #include  <Wire.h>
@@ -222,19 +221,18 @@ void pidCompute() {
     // Calculates PWM:
     unoTemp = thermoUno.readCelsius();
     unoOutput = unoPID.output(unoTemp);
-    delay(10  );
     dosTemp = thermoDos.readCelsius();
     dosOutput = dosPID.output(dosTemp);
 
     // Prints temp readings to LCD screen:
-    lcd.clear();
+    /*lcd.clear();
     lcd.print("UNO = ");
     lcd.print(unoTemp);
     lcd.print(" C");
     lcd.setCursor(0,1);
     lcd.print("DOS = ");
     lcd.print(dosTemp);
-    lcd.print(" C");
+    lcd.print(" C");*/
     
       
     // Prints PID details:
@@ -274,6 +272,7 @@ void killAll() {
   digitalWrite(WHITE, LOW);
   digitalWrite(HEATER_UNO, LOW);
   digitalWrite(UNO_INDICATOR, LOW);
+  digitalWrite(DOS_INDICATOR, LOW);
   digitalWrite(HEATER_DOS, LOW);
   digitalWrite(HEATER_DOS, LOW);
   digitalWrite(SHAFT, LOW);
@@ -294,8 +293,9 @@ void setup() {
   pinMode(RED, OUTPUT);
   pinMode(YELLOW, OUTPUT);
   pinMode(HEATER_UNO, OUTPUT);
-  digitalWrite(HEATER_DOS, LOW);
+  pinMode(HEATER_DOS, OUTPUT);
   pinMode(UNO_INDICATOR, OUTPUT);
+  pinMode(DOS_INDICATOR, OUTPUT);
   pinMode(HEATER_DOS, OUTPUT);
   
   // Initialize output pins:
@@ -305,6 +305,7 @@ void setup() {
   digitalWrite(HEATER_UNO, LOW);
   digitalWrite(HEATER_DOS, LOW);
   digitalWrite(UNO_INDICATOR, LOW);
+  digitalWrite(DOS_INDICATOR, LOW);
   digitalWrite(HEATER_DOS, LOW);
   
   digitalWrite(HEATER_DOS, LOW);
@@ -340,6 +341,7 @@ void setup() {
   lcd.init(); // initialize the lcd 
   lcd.backlight();
   lcd.clear();
+  delay(500);
 }
 
 

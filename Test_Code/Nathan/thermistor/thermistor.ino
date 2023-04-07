@@ -31,5 +31,5 @@ void loop() {
   Serial.println(thermoDos.readCelsius());
  
   // For the MAX6675 to update, you must delay AT LEAST 250ms between reads!
-  delay(250);
+  delay(300);
 }
