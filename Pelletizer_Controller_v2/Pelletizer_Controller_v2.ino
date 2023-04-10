@@ -18,7 +18,6 @@
 #define WHITE   12
 #define HEATER_UNO 23
 #define HEATER_DOS 22
-#define HEATON 22 // delete
 #define UNO_INDICATOR 25
 #define DOS_INDICATOR 26
 
@@ -154,7 +153,7 @@ class PID {
 
 // PID UNO
 double unoSetpoint, unoTemp, unoOutput;
-double Kp=10, Ki=0, Kd=0;
+double Kp=2 , Ki=0, Kd=0;
 PID unoPID(Kp, Ki, Kd, 200);
 int WindowSize = 300; // CONSIDER REDUCING WINDOW SIZE TO 300 ms (the thermocouple's refresh rate)
 unsigned long windowStartTime;
@@ -162,7 +161,7 @@ unsigned long windowStartTime;
 // PID DOS
 #define DOSPID // Defines compiler variable to run DOS PID and keep UNO PID from turning on DOS heater
 double dosSetpoint, dosTemp, dosOutput;
-double DOS_Kp=10, DOS_Ki=0, DOS_Kd=0;
+double DOS_Kp=2, DOS_Ki=0, DOS_Kd=0;
 PID dosPID(DOS_Kp, DOS_Ki, DOS_Kd, 200);
 
 //-----///// Functions /////------//
@@ -219,20 +218,21 @@ void checkButtons() {
 
 void pidCompute() {
     // Calculates PWM:
-    unoTemp = thermoUno.readCelsius();
+    unoTemp = double(thermoUno.readCelsius());
+    dosTemp = double(thermoDos.readCelsius());
+    
     unoOutput = unoPID.output(unoTemp);
-    dosTemp = thermoDos.readCelsius();
     dosOutput = dosPID.output(dosTemp);
 
     // Prints temp readings to LCD screen:
-    /*lcd.clear();
+    lcd.clear();
     lcd.print("UNO = ");
     lcd.print(unoTemp);
     lcd.print(" C");
     lcd.setCursor(0,1);
     lcd.print("DOS = ");
     lcd.print(dosTemp);
-    lcd.print(" C");*/
+    lcd.print(" C");
     
       
     // Prints PID details:
@@ -256,10 +256,6 @@ void pidCompute() {
     Serial.print(dosPID.getD());
     Serial.print(") = ");
     Serial.println(dosOutput);
-    /*Serial.print(" DIRECT = ");
-    Serial.print(DIRECT);
-    Serial.print(" DIRECTION = ");
-    Serial.println(unoPID.GetDirection());*/
     
 }
 
@@ -296,7 +292,6 @@ void setup() {
   pinMode(HEATER_DOS, OUTPUT);
   pinMode(UNO_INDICATOR, OUTPUT);
   pinMode(DOS_INDICATOR, OUTPUT);
-  pinMode(HEATER_DOS, OUTPUT);
   
   // Initialize output pins:
   digitalWrite(GREEN, HIGH);
