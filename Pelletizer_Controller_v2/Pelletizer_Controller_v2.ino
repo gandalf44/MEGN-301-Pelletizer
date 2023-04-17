@@ -100,7 +100,7 @@ class PID {
   
     // setters:
     void setP(double P){ pkP = P; }
-    void setI(double I){ pkP = I; }
+    void setI(double I){ pkI = I; }
     void setD(double D){ pkD = D; }
     void setImax(double Imax) { pImax = Imax; }
     void setSetpoint(double setpoint) { pSetpoint = setpoint; }
