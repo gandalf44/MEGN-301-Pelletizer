@@ -153,7 +153,7 @@ class PID {
 
 // PID UNO
 double unoSetpoint, unoTemp, unoOutput;
-double Kp=2 , Ki=0, Kd=0;
+double Kp=2 , Ki=0.8, Kd=0;
 PID unoPID(Kp, Ki, Kd, 200);
 int WindowSize = 300; // CONSIDER REDUCING WINDOW SIZE TO 300 ms (the thermocouple's refresh rate)
 unsigned long windowStartTime;
@@ -161,7 +161,7 @@ unsigned long windowStartTime;
 // PID DOS
 #define DOSPID // Defines compiler variable to run DOS PID and keep UNO PID from turning on DOS heater
 double dosSetpoint, dosTemp, dosOutput;
-double DOS_Kp=2, DOS_Ki=0, DOS_Kd=0;
+double DOS_Kp=2, DOS_Ki=0.6, DOS_Kd=0;
 PID dosPID(DOS_Kp, DOS_Ki, DOS_Kd, 200);
 
 //-----///// Functions /////------//
