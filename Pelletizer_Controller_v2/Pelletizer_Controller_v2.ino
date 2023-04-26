@@ -9,13 +9,13 @@
 ///// PORTS /////
 
 // If DEBUG is defined, more print statements will go to the Serial
-#define DEBUG
+//#define DEBUG
 
 // Debug LED Ports:
 #define GREEN 9
 #define RED 10
 #define YELLOW 11
-#define WHITE   12
+#define WHITE 12
 #define HEATER_UNO 23
 #define HEATER_DOS 22
 #define UNO_INDICATOR 25
@@ -42,6 +42,7 @@ MAX6675 thermoDos(THERMO_DOS_SCK, THEMRO_DOS_CS, THERMO_DOS_SO);
 
 // Define E-stop Port
 #define ESTOP 13
+#define HEAT_BUTTON 5
 
 // LCD
 LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
@@ -56,8 +57,9 @@ Thread PID_COMPUTE = Thread();
 ///// Global Variables /////
 bool runMain = true; // true so long as the primary code should run in main (E-stop makes this false)
 bool isHot = false; // true if HEATER_UNO is hot
-short shaftPWM = 50;
-short cutPWM = 50;
+bool heatOn = false; // true if heaters should run
+short shaftPWM = 255;
+short cutPWM = 125;
 bool shaftOn = false; // shaft defaults to turned off
 bool cutOn = false; // shaft defaults to turned off
 ////////////////////////////
@@ -152,16 +154,16 @@ class PID {
 };
 
 // PID UNO
-double unoSetpoint, unoTemp, unoOutput;
-double Kp=2 , Ki=0.8, Kd=0;
+double unoSetpoint(170), unoTemp, unoOutput;
+double Kp=2 , Ki=0.6, Kd=0;
 PID unoPID(Kp, Ki, Kd, 200);
 int WindowSize = 300; // CONSIDER REDUCING WINDOW SIZE TO 300 ms (the thermocouple's refresh rate)
 unsigned long windowStartTime;
 
 // PID DOS
 #define DOSPID // Defines compiler variable to run DOS PID and keep UNO PID from turning on DOS heater
-double dosSetpoint, dosTemp, dosOutput;
-double DOS_Kp=2, DOS_Ki=0.6, DOS_Kd=0;
+double dosSetpoint(180), dosTemp, dosOutput;
+double DOS_Kp=2, DOS_Ki=0.4, DOS_Kd=0;
 PID dosPID(DOS_Kp, DOS_Ki, DOS_Kd, 200);
 
 //-----///// Functions /////------//
@@ -196,6 +198,11 @@ void checkButtons() {
     // Check if cut button is pressed
     if(!digitalRead(CUTON)) {
       cutOn = !cutOn;
+    }
+
+    // Check if cut button is pressed
+    if(!digitalRead(HEAT_BUTTON)) {
+      heatOn = !heatOn;
     }
 
     // Check's if PWM's are on
@@ -238,6 +245,8 @@ void pidCompute() {
     // Prints PID details:
     Serial.print("UNO C = ");
     Serial.print(unoTemp);
+    Serial.print("/");
+    Serial.print(unoSetpoint);
     Serial.print(" | P(");
     Serial.print(unoPID.getP());
     Serial.print(")*I(");
@@ -248,6 +257,8 @@ void pidCompute() {
     Serial.println(unoOutput);
     Serial.print("DOS C = ");
     Serial.print(dosTemp);
+    Serial.print("/");
+    Serial.print(dosSetpoint);
     Serial.print(" | P(");
     Serial.print(dosPID.getP());
     Serial.print(")*I(");
@@ -271,8 +282,11 @@ void killAll() {
   digitalWrite(DOS_INDICATOR, LOW);
   digitalWrite(HEATER_DOS, LOW);
   digitalWrite(HEATER_DOS, LOW);
-  digitalWrite(SHAFT, LOW);
-  digitalWrite(CUTTER, LOW);
+  analogWrite(SHAFT, 0);
+  analogWrite(CUTTER, 0);
+  heatOn = false;
+  shaftOn = false; // shaft defaults to turned off
+  cutOn = false;
 }
 
 //-----/////////////////////------//
@@ -309,6 +323,7 @@ void setup() {
   pinMode(ESTOP, INPUT_PULLUP);
   pinMode(SHAFTON, INPUT_PULLUP);
   pinMode(CUTON, INPUT_PULLUP);
+  pinMode(HEAT_BUTTON, INPUT_PULLUP);
 
   // Initialize Threads
   CHECK_BUTTONS.onRun(checkButtons);
@@ -318,25 +333,14 @@ void setup() {
 
   ////// PID: //////
   windowStartTime = millis();
+  unoPID.setSetpoint(unoSetpoint);
+  dosPID.setSetpoint(dosSetpoint);
 
-  //initialize the variables we're linked to
-  unoSetpoint = 0;
-  dosSetpoint = 0;
-
-  //tell the PID to range between 0 and the full window size
-  //unoPID.SetOutputLimits(0, WindowSize);
-  //dosPID.SetOutputLimits(0, WindowSize);
-
-  //turn the PID on
-  //unoPID.SetMode(AUTOMATIC);
-  //dosPID.SetMode(AUTOMATIC);
-  ////////////////
 
   // LCD
   lcd.init(); // initialize the lcd 
   lcd.backlight();
   lcd.clear();
-  delay(500);
 }
 
 
@@ -423,40 +427,46 @@ void loop() {
     }
     
     
-
-    // PID PWM:
-    if (millis() - windowStartTime > WindowSize)
-    { //time to shift the Relay Window
-      windowStartTime += WindowSize;
-      debug_print("Increase Window Size: ");
-      Serial.println(windowStartTime);
-    }
-    if (unoOutput > millis() - windowStartTime) { // < changed from default
-      digitalWrite(HEATER_UNO, HIGH);
-      #ifndef DOSPID
-        digitalWrite(HEATER_DOS, HIGH);
-      #endif
-      digitalWrite(UNO_INDICATOR, HIGH);
-    }
-    else {
-      digitalWrite(HEATER_UNO, LOW);
-      #ifndef DOSPID
-        digitalWrite(HEATER_DOS, LOW);
-      #endif
-      digitalWrite(UNO_INDICATOR, LOW);
-    }
-
-    #ifdef DOSPID
-      if (dosOutput > millis() - windowStartTime) { // < changed from default
-        digitalWrite(HEATER_DOS, HIGH);
-        digitalWrite(DOS_INDICATOR, HIGH);
+    if(heatOn) {
+      // PID PWM:
+      if (millis() - windowStartTime > WindowSize)
+      { //time to shift the Relay Window
+        windowStartTime += WindowSize;
+        debug_print("Increase Window Size: ");
+        //Serial.println(windowStartTime);
+      }
+      if (unoOutput > millis() - windowStartTime) { // < changed from default
+        digitalWrite(HEATER_UNO, HIGH);
+        #ifndef DOSPID
+          digitalWrite(HEATER_DOS, HIGH);
+        #endif
+        digitalWrite(UNO_INDICATOR, HIGH);
       }
       else {
-        digitalWrite(HEATER_DOS, LOW);
-        digitalWrite(DOS_INDICATOR, LOW);
+        digitalWrite(HEATER_UNO, LOW);
+        #ifndef DOSPID
+          digitalWrite(HEATER_DOS, LOW);
+        #endif
+        digitalWrite(UNO_INDICATOR, LOW);
       }
-    #endif
+  
+      #ifdef DOSPID
+        if (dosOutput > millis() - windowStartTime) { // < changed from default
+          digitalWrite(HEATER_DOS, HIGH);
+          digitalWrite(DOS_INDICATOR, HIGH);
+        }
+        else {
+          digitalWrite(HEATER_DOS, LOW);
+          digitalWrite(DOS_INDICATOR, LOW);
+        }
+      #endif
 
+    } else {
+      digitalWrite(HEATER_UNO, LOW);
+      digitalWrite(UNO_INDICATOR, LOW);
+      digitalWrite(HEATER_DOS, LOW);
+      digitalWrite(DOS_INDICATOR, LOW);
+    }
 
     // Checks if button thread should run:
     if(CHECK_BUTTONS.shouldRun()) { // (NOTE: Consider adding a thread controller at a later date)
