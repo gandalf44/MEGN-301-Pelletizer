@@ -56,15 +56,14 @@ Thread PID_COMPUTE = Thread();
 
 ///// Global Variables /////
 bool runMain = true; // true so long as the primary code should run in main (E-stop makes this false)
-bool isHot = false; // true if HEATER_UNO is hot
-bool heatOn = false; // true if heaters should run
-short shaftPWM = 255;
-short cutPWM = 125;
-bool shaftOn = false; // shaft defaults to turned off
-bool cutOn = false; // shaft defaults to turned off
+bool heatOn = false; // true if heaters should run (part of heater toggle)
+short shaftPWM = 255; // default value for shaft motor speed
+short cutPWM = 125; // default value for cutter speed
+bool shaftOn = false; // shaft defaults to turned off (part of shaft toggle)
+bool cutOn = false; // shaft defaults to turned off (part of cutter toggle)
 ////////////////////////////
 
-// class to create a custom PID
+// custom PID class (based on MEGN300 PID)
 class PID {
   private:
     double pkP;
@@ -121,9 +120,7 @@ class PID {
 
     double output(double curInput){ 
       long curTime = millis();
-      /*Serial.print("T(");
-      Serial.print(curTime);
-      Serial.print(" ms) ");*/
+
       // Calculate the integral
       pItot += (curTime-pPrevTime)*curInput;
 
@@ -142,26 +139,20 @@ class PID {
       // reinitializes previous variables
       pPrevInput = curInput;
       pPrevTime = curTime;
-      /*Serial.print("P(");
-      Serial.print(P);
-      Serial.print(")*I(");
-      Serial.print(I);
-      Serial.print(")*D(");
-      Serial.print(D);
-      Serial.print(") = ");*/
+
       return (P + I + D);
     }
 };
 
-// PID UNO
+// PID UNO (FRONT PID)
 double unoSetpoint(170), unoTemp, unoOutput;
 double Kp=2 , Ki=0.6, Kd=0;
 PID unoPID(Kp, Ki, Kd, 200);
 int WindowSize = 300; // CONSIDER REDUCING WINDOW SIZE TO 300 ms (the thermocouple's refresh rate)
 unsigned long windowStartTime;
 
-// PID DOS
-#define DOSPID // Defines compiler variable to run DOS PID and keep UNO PID from turning on DOS heater
+// PID DOS (NOZZLE PID)
+#define DOSPID // Defines compiler variable to run DOS PID. If undefined, UNO controls both PID zones.
 double dosSetpoint(180), dosTemp, dosOutput;
 double DOS_Kp=2, DOS_Ki=0.4, DOS_Kd=0;
 PID dosPID(DOS_Kp, DOS_Ki, DOS_Kd, 200);
@@ -182,16 +173,18 @@ void debug_println(String output) {
   #endif
 }
 
-// E-STOP Function:
+// Function to check all button inputs (NOTE: This function is used by the Thread (multitasking) setup)
 void checkButtons() {
-    //debug_println("Check ESTOP");
+  
+    debug_println("Check BUTTONS");
+    
     if(!digitalRead(ESTOP)) {
       runMain = false;
       debug_println("FALSE");
-      killAll();
+      killAll(); // calls funcition to shutdown all outputs
     }
 
-    // Check if Shaft button is pressted
+    // Check if Shaft button is pressed
     if(!digitalRead(SHAFTON)) {
       shaftOn = !shaftOn;
     }
@@ -200,7 +193,7 @@ void checkButtons() {
       cutOn = !cutOn;
     }
 
-    // Check if cut button is pressed
+    // Check if cut button is pressed (NOTE: this toggle manifests in the main loop)
     if(!digitalRead(HEAT_BUTTON)) {
       heatOn = !heatOn;
     }
@@ -278,12 +271,12 @@ void killAll() {
   digitalWrite(YELLOW, LOW);
   digitalWrite(WHITE, LOW);
   digitalWrite(HEATER_UNO, LOW);
+  digitalWrite(HEATER_DOS, LOW);
   digitalWrite(UNO_INDICATOR, LOW);
   digitalWrite(DOS_INDICATOR, LOW);
-  digitalWrite(HEATER_DOS, LOW);
-  digitalWrite(HEATER_DOS, LOW);
   analogWrite(SHAFT, 0);
   analogWrite(CUTTER, 0);
+  
   heatOn = false;
   shaftOn = false; // shaft defaults to turned off
   cutOn = false;
@@ -325,7 +318,7 @@ void setup() {
   pinMode(CUTON, INPUT_PULLUP);
   pinMode(HEAT_BUTTON, INPUT_PULLUP);
 
-  // Initialize Threads
+  // Initialize Threads (Multitasking)
   CHECK_BUTTONS.onRun(checkButtons);
   CHECK_BUTTONS.setInterval(400);
   PID_COMPUTE.onRun(pidCompute);
@@ -336,7 +329,6 @@ void setup() {
   unoPID.setSetpoint(unoSetpoint);
   dosPID.setSetpoint(dosSetpoint);
 
-
   // LCD
   lcd.init(); // initialize the lcd 
   lcd.backlight();
@@ -345,9 +337,9 @@ void setup() {
 
 
 void loop() {
-  String serialValue;
+  String serialValue; // variable for current serial input
   while(runMain) {
-    digitalWrite(GREEN, 60);
+    digitalWrite(GREEN, 60); // greed LED indicates main is running.
     // put your main code here, to run repeatedly:
     
     // Checks for new string in serial:
@@ -481,6 +473,7 @@ void loop() {
 
   // Insert restart code
   digitalWrite(RED, HIGH);
+  digitalWrite(GREEN, LOW);
 
   // Prints temp readings to LCD screen:
   lcd.clear();
